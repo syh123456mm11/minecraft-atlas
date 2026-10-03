@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>MC 地图册 · 种子地图与服务器查询</title>
+  <meta name="description" content="用 cubiomes 精确引擎查看 Minecraft 种子地图，搜索地形与建筑，并查询服务器在线玩家。">
+  <link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">⛏️</span>
+      <span class="brand-text">MC 地图册</span>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button class="tab is-active" data-view="seed">种子地图</button>
+      <button class="tab" data-view="server">服务器查询</button>
+    </nav>
+    <div class="topbar-right">
+      <div class="engine-badge" id="engineBadge" title="地形引擎状态">
+        <span class="dot"></span><span id="engineText">引擎加载中…</span>
+      </div>
+      <button class="account-btn" id="accountBtn" title="登录后云同步收藏与历史">
+        <span class="avatar" id="accountAvatar">☺</span><span id="accountLabel">登录</span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <!-- 种子地图 -->
+    <section class="view" id="view-seed">
+      <aside class="panel">
+        <div class="card">
+          <h3>世界设定</h3>
+          <label>
+            <span>游戏版本</span>
+            <select id="versionSelect"></select>
+          </label>
+          <div class="seg" id="dimSeg"></div>
+          <label>
+            <span>种子（数字或文字）</span>
+            <div class="row">
+              <input type="text" id="seedInput" placeholder="例如 12345 或 hello">
+              <button id="seedRandom" class="ghost" title="随机一个种子">随机</button>
+            </div>
+          </label>
+          <p class="hint" id="seedHint"></p>
+        </div>
+
+        <div class="card">
+          <h3>搜索地形 / 建筑</h3>
+          <div class="seg small" id="searchSeg">
+            <button data-kind="biome" class="is-active">地形</button>
+            <button data-kind="structure">建筑</button>
+          </div>
+          <input type="search" id="searchInput" placeholder="输入名称搜索…">
+          <div class="results" id="searchResults"></div>
+          <div class="status" id="searchStatus"></div>
+        </div>
+
+        <div class="card">
+          <h3>显示选项</h3>
+          <div class="check-list">
+            <label class="check"><input type="checkbox" id="optStructures" checked> 建筑标记</label>
+            <label class="check"><input type="checkbox" id="optAttempts"> 生成尝试点（未成功生成）</label>
+            <label class="check"><input type="checkbox" id="optGrid"> 网格</label>
+            <label class="check"><input type="checkbox" id="optSlime"> 史莱姆区块</label>
+          </div>
+          <label>
+            <span>渲染质量</span>
+            <select id="qualitySelect">
+              <option value="80000">流畅</option>
+              <option value="160000" selected>标准</option>
+              <option value="320000">精细</option>
+            </select>
+          </label>
+          <div class="struct-list" id="structList"></div>
+        </div>
+
+        <div class="card">
+          <h3>我的收藏<i class="card-tag">云端</i></h3>
+          <div class="row">
+            <input type="text" id="markLabel" placeholder="给当前视野起个名字（可选）">
+            <button id="markAdd" class="primary">收藏</button>
+          </div>
+          <div class="marks" id="markList"></div>
+        </div>
+      </aside>
+
+      <div class="stage">
+        <div class="map-frame">
+          <canvas id="map"></canvas>
+          <div class="hud top-left"><div class="coord-pill" id="coordHud">移动鼠标查看坐标</div></div>
+          <div class="hud top-right">
+            <button id="zoomIn" class="circle" title="放大">＋</button>
+            <button id="zoomOut" class="circle" title="缩小">－</button>
+            <button id="goSpawn" title="回到出生点">出生点</button>
+            <button id="goOrigin" title="回到原点">原点</button>
+          </div>
+          <div class="tooltip" id="tooltip"></div>
+          <div class="legend" id="legend"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 服务器查询 -->
+    <section class="view is-hidden" id="view-server">
+      <aside class="panel">
+        <div class="card">
+          <h3>服务器</h3>
+          <label>
+            <span>服务器地址</span>
+            <div class="row">
+              <input type="text" id="serverAddr" placeholder="mc.example.com 或 1.2.3.4:25565">
+              <button id="serverQuery" class="primary">查询</button>
+            </div>
+          </label>
+          <p class="hint">支持 Java 版服务器，域名会自动解析 SRV 记录。仅查询公开状态信息，不进行任何登录操作。</p>
+          <div class="status" id="serverStatus"></div>
+        </div>
+
+        <div class="card">
+          <h3>正版账号</h3>
+          <label>
+            <span>账号名</span>
+            <input type="text" id="accountName" placeholder="填入你的正版 ID">
+          </label>
+          <label class="check"><input type="checkbox" id="previewOnly"> 仅预览（不校验正版，直接查名单）</label>
+          <button id="accountVerify" class="ghost">校验正版账号</button>
+          <div class="status" id="accountStatus"></div>
+        </div>
+
+        <div class="card" id="serverCard">
+          <h3>服务器信息</h3>
+          <div class="empty-state">输入地址并点击查询，结果会显示在这里。</div>
+        </div>
+
+        <div class="card" id="playersCard">
+          <h3>在线玩家</h3>
+          <div class="empty-state">查询成功后显示服务器公开的玩家名单。</div>
+        </div>
+
+        <div class="card" id="playerCard">
+          <h3>我的位置</h3>
+          <div class="empty-state">填入账号后查询你在服务器中的位置。</div>
+        </div>
+
+        <div class="card">
+          <h3>查询历史<i class="card-tag">云端</i></h3>
+          <div class="marks" id="historyList"></div>
+        </div>
+      </aside>
+
+      <div class="stage">
+        <div class="map-frame">
+          <canvas id="serverMap"></canvas>
+          <div class="hud top-left"><div class="coord-pill" id="serverCoordHud">服务器世界视图</div></div>
+          <div class="hud top-right">
+            <button id="serverZoomIn" class="circle">＋</button>
+            <button id="serverZoomOut" class="circle">－</button>
+            <button id="serverFocus">定位我</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 登录 / 注册 -->
+  <div class="modal" id="authModal" hidden>
+    <div class="modal-backdrop" data-close="1"></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <div class="modal-head">
+        <h3 id="authTitle">登录</h3>
+        <button class="icon-btn" id="authClose" aria-label="关闭">✕</button>
+      </div>
+      <div class="seg small" id="authSeg">
+        <button data-mode="password" class="is-active">密码</button>
+        <button data-mode="otp">验证码</button>
+        <button data-mode="signup">注册</button>
+        <button data-mode="reset">找回</button>
+      </div>
+      <div class="modal-body" id="authBody"></div>
+      <div class="status" id="authStatus"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+  <script src="assets/js/core/util.js"></script>
+  <script src="assets/js/core/versions.js"></script>
+  <script src="assets/js/core/catalog.js"></script>
+  <script src="assets/js/core/jsBackend.js"></script>
+  <script src="assets/js/core/wasmBackend.js"></script>
+  <script src="assets/js/core/engine.js"></script>
+  <script src="assets/js/map/tileSource.js"></script>
+  <script src="assets/js/map/mapView.js"></script>
+  <script src="assets/js/map/finder.js"></script>
+  <script src="assets/js/net/providers.js"></script>
+  <script src="assets/js/net/serverApi.js"></script>
+  <script src="assets/js/net/accountApi.js"></script>
+  <script src="assets/js/cloud/config.js"></script>
+  <script src="assets/js/cloud/cloudClient.js"></script>
+  <script src="assets/js/cloud/authService.js"></script>
+  <script src="assets/js/cloud/dataService.js"></script>
+  <script src="assets/js/ui/toast.js"></script>
+  <script src="assets/js/ui/seedPanel.js"></script>
+  <script src="assets/js/ui/searchPanel.js"></script>
+  <script src="assets/js/ui/serverPanel.js"></script>
+  <script src="assets/js/ui/accountPanel.js"></script>
+  <script src="assets/js/ui/marksPanel.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

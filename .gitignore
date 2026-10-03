@@ -1,0 +1,16 @@
+# 系统
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 编辑器 / IDE
+.vscode/
+.idea/
+*.swp
+
+# 本地临时文件（冒烟测试脚本等，以点开头）
+.*.mjs
+.*.log
+
+# 依赖（本项目为纯静态站点，无构建步骤）
+node_modules/
