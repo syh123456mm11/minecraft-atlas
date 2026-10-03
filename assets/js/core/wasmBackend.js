@@ -185,10 +185,9 @@ globalThis.MC = globalThis.MC || {};
     if (!this._outPtr) this._outPtr = this.m._malloc(16);
     var p = this._outPtr;
     if (this.m._wasm_structure_pos(idx, this._mc, this._lo, this._hi, rx, rz, p) !== 1) return null;
-    // cubiomes 返回的是【区块坐标】，地图投影与搜索距离都用【方块坐标】，
-    // 这里统一换算到方块（区块中心）避免标记整体差 16 倍、贴到原点附近
-    var chunkX = this.m.HEAP32[p / 4], chunkZ = this.m.HEAP32[p / 4 + 1];
-    return { x: chunkX * 16 + 8, z: chunkZ * 16 + 8 };
+    // _wasm_structure_pos 返回的是【方块坐标】（经验证：坐标/16 恰好落在所属结构区域内，
+    // 直接当区块坐标则 0 个落入区域）。地图投影与搜索距离都用方块坐标，原样透传即可。
+    return { x: this.m.HEAP32[p / 4], z: this.m.HEAP32[p / 4 + 1] };
   };
 
   WasmBackend.prototype.structureViable = function (key, bx, bz) {
@@ -198,8 +197,9 @@ globalThis.MC = globalThis.MC || {};
     if (idx < 0) return false;
     var h = this._ctx(def.dim);
     if (!h) return false;
-    // 入参是方块坐标（与 structureAttempt / 地图保持一致），cubiomes 的 viable 检查要区块坐标
-    return this.m._wasm_ctx_structure_viable(h, idx, Math.floor(bx / 16), Math.floor(bz / 16)) === 1;
+    // 入参 bx,bz 是方块坐标，与 structureAttempt / 地图投影一致；
+    // _wasm_ctx_structure_viable 接收的同样是方块坐标（经验证：直接传坐标才有意义，/16 后几乎全为 0）
+    return this.m._wasm_ctx_structure_viable(h, idx, bx, bz) === 1;
   };
 
   WasmBackend.prototype.dispose = function () {
