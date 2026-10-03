@@ -21,9 +21,6 @@
       <div class="engine-badge" id="engineBadge" title="地形引擎状态">
         <span class="dot"></span><span id="engineText">引擎加载中…</span>
       </div>
-      <button class="account-btn" id="accountBtn" title="登录后云同步收藏与历史">
-        <span class="avatar" id="accountAvatar">☺</span><span id="accountLabel">登录</span>
-      </button>
     </div>
   </header>
 
@@ -79,12 +76,13 @@
         </div>
 
         <div class="card">
-          <h3>我的收藏<i class="card-tag">云端</i></h3>
+          <h3>我的收藏<i class="card-tag">本机</i></h3>
           <div class="row">
             <input type="text" id="markLabel" placeholder="给当前视野起个名字（可选）">
             <button id="markAdd" class="primary">收藏</button>
           </div>
           <div class="marks" id="markList"></div>
+          <p class="hint" id="markStoreHint"></p>
         </div>
       </aside>
 
@@ -147,8 +145,9 @@
         </div>
 
         <div class="card">
-          <h3>查询历史<i class="card-tag">云端</i></h3>
+          <h3>查询历史<i class="card-tag">本机</i></h3>
           <div class="marks" id="historyList"></div>
+          <p class="hint" id="historyStoreHint"></p>
         </div>
       </aside>
 
@@ -166,28 +165,8 @@
     </section>
   </main>
 
-  <!-- 登录 / 注册 -->
-  <div class="modal" id="authModal" hidden>
-    <div class="modal-backdrop" data-close="1"></div>
-    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="authTitle">
-      <div class="modal-head">
-        <h3 id="authTitle">登录</h3>
-        <button class="icon-btn" id="authClose" aria-label="关闭">✕</button>
-      </div>
-      <div class="seg small" id="authSeg">
-        <button data-mode="password" class="is-active">密码</button>
-        <button data-mode="otp">验证码</button>
-        <button data-mode="signup">注册</button>
-        <button data-mode="reset">找回</button>
-      </div>
-      <div class="modal-body" id="authBody"></div>
-      <div class="status" id="authStatus"></div>
-    </div>
-  </div>
-
   <div class="toast" id="toast"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
   <script src="assets/js/core/util.js"></script>
   <script src="assets/js/core/versions.js"></script>
   <script src="assets/js/core/catalog.js"></script>
@@ -200,15 +179,11 @@
   <script src="assets/js/net/providers.js"></script>
   <script src="assets/js/net/serverApi.js"></script>
   <script src="assets/js/net/accountApi.js"></script>
-  <script src="assets/js/cloud/config.js"></script>
-  <script src="assets/js/cloud/cloudClient.js"></script>
-  <script src="assets/js/cloud/authService.js"></script>
-  <script src="assets/js/cloud/dataService.js"></script>
+  <script src="assets/js/data/localStore.js"></script>
   <script src="assets/js/ui/toast.js"></script>
   <script src="assets/js/ui/seedPanel.js"></script>
   <script src="assets/js/ui/searchPanel.js"></script>
   <script src="assets/js/ui/serverPanel.js"></script>
-  <script src="assets/js/ui/accountPanel.js"></script>
   <script src="assets/js/ui/marksPanel.js"></script>
   <script src="assets/js/app.js"></script>
 </body>

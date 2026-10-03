@@ -208,7 +208,6 @@ globalThis.MC = globalThis.MC || {};
     MC.SeedPanel.init(ctx);
     MC.SearchPanel.init(ctx);
     MC.ServerPanel.init(ctx);
-    MC.AccountPanel.init();
     MC.MarksPanel.init(ctx);
 
     MC.bus.on('server:world', function (res) {

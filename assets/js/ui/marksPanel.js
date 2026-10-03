@@ -1,7 +1,7 @@
 /*
- * 云端数据面板：种子收藏 + 服务器查询历史。
- * 只做「渲染 + 调用数据服务」，不碰地图与世界状态——跳转变由事件交给宿主处理，
- * 写操作一律先过 MC.data 的登录闸门，未登录时引导登录而不是静默落本地。
+ * 本地数据面板：种子收藏 + 服务器查询历史。
+ * 只做「渲染 + 调用数据仓库」，不碰地图与世界状态——跳转变由事件交给宿主处理。
+ * 数据全部落在访问者自己的浏览器里（见 data/localStore.js），没有账号，也不需要登录。
  */
 globalThis.MC = globalThis.MC || {};
 (function (MC) {
@@ -22,14 +22,20 @@ globalThis.MC = globalThis.MC || {};
     return sameDay ? ('今天 ' + hh + ':' + mm) : (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + hh + ':' + mm;
   }
 
-  function loginHint(action) {
-    return '<div class="empty-state">登录后即可' + action + '，数据保存在你的账号下。<br>' +
-      '<button class="ghost small" data-act="login">去登录</button></div>';
+  /** 告诉用户数据到底存在哪：能用本地存储就说清楚范围，不能就明确告知会丢 */
+  function renderStoreHint() {
+    var info = MC.data.storageInfo();
+    var text = info.persistent
+      ? '保存在本机浏览器（localStorage），只对 ' + info.scope + ' 可见，不会上传到任何服务器。'
+      : '当前浏览器不允许写入本地存储' + (info.reason ? '（' + info.reason + '）' : '') + '，记录只保留到关闭页面。';
+    ['#markStoreHint', '#historyStoreHint'].forEach(function (sel) {
+      var el = MC.util.qs(sel);
+      if (el) el.textContent = text;
+    });
   }
 
   function renderMarks() {
     var box = MC.util.qs('#markList');
-    if (!MC.auth.isSignedIn()) { box.innerHTML = loginHint('收藏种子与坐标'); return; }
     if (!marks.length) {
       box.innerHTML = '<div class="empty-state">还没有收藏。找到好地图时点上面的「收藏」保存当前视野。</div>';
       return;
@@ -56,7 +62,6 @@ globalThis.MC = globalThis.MC || {};
 
   function renderHistory() {
     var box = MC.util.qs('#historyList');
-    if (!MC.auth.isSignedIn()) { box.innerHTML = loginHint('保存查询历史'); return; }
     if (!history.length) {
       box.innerHTML = '<div class="empty-state">暂无记录，查询过的服务器会出现在这里。</div>';
       return;
@@ -75,25 +80,29 @@ globalThis.MC = globalThis.MC || {};
     }).join('');
   }
 
+  function showError(boxSel, err) {
+    MC.util.qs(boxSel).innerHTML = '<div class="empty-state">' + MC.util.escape(err.message || '读取失败') + '</div>';
+  }
+
   function loadMarks() {
-    if (!MC.auth.isSignedIn()) { marks = []; renderMarks(); return Promise.resolve(); }
     return MC.data.listMarks().then(function (list) {
       marks = list;
       renderMarks();
+      renderStoreHint();
     }).catch(function (err) {
       marks = [];
-      MC.util.qs('#markList').innerHTML = '<div class="empty-state">' + MC.util.escape(err.message) + '</div>';
+      showError('#markList', err);
     });
   }
 
   function loadHistory() {
-    if (!MC.auth.isSignedIn()) { history = []; renderHistory(); return Promise.resolve(); }
     return MC.data.listHistory().then(function (list) {
       history = list;
       renderHistory();
+      renderStoreHint();
     }).catch(function (err) {
       history = [];
-      MC.util.qs('#historyList').innerHTML = '<div class="empty-state">' + MC.util.escape(err.message) + '</div>';
+      showError('#historyList', err);
     });
   }
 
@@ -117,11 +126,10 @@ globalThis.MC = globalThis.MC || {};
     btn.disabled = true;
     MC.data.addMark(currentMark(label)).then(function () {
       MC.util.qs('#markLabel').value = '';
-      MC.toast('已保存到云端收藏', 'ok');
+      MC.toast('已保存到本机收藏', 'ok');
       return loadMarks();
     }).catch(function (err) {
-      if (err.needLogin) MC.AccountPanel.open('password');
-      MC.toast(err.message, 'error');
+      MC.toast(err.message || '保存失败', 'error');
     }).then(function () { btn.disabled = false; });
   }
 
@@ -137,15 +145,13 @@ globalThis.MC = globalThis.MC || {};
     confirmTimers.set(id, timer);
   }
 
-  function onListClick(e, box, isMark) {
+  function onListClick(e, isMark) {
     var btn = e.target.closest ? e.target.closest('button') : null;
     if (!btn) return;
     var row = btn.closest('.mark-row');
     if (!row) return;
     var id = Number(row.dataset.id);
     var act = btn.dataset.act;
-
-    if (act === 'login') { MC.AccountPanel.open('password'); return; }
 
     if (act === 'del') {
       if (!btn.classList.contains('is-armed')) { armConfirm(btn, id, 'del'); return; }
@@ -155,7 +161,7 @@ globalThis.MC = globalThis.MC || {};
       job.then(function () {
         MC.toast('已删除', 'ok');
         return isMark ? loadMarks() : loadHistory();
-      }).catch(function (err) { MC.toast(err.message, 'error'); });
+      }).catch(function (err) { MC.toast(err.message || '删除失败', 'error'); });
       return;
     }
 
@@ -180,10 +186,8 @@ globalThis.MC = globalThis.MC || {};
       MC.util.qs('#markLabel').addEventListener('keydown', function (e) {
         if (e.key === 'Enter') addMark();
       });
-      MC.util.qs('#markList').addEventListener('click', function (e) { onListClick(e, this, true); });
-      MC.util.qs('#historyList').addEventListener('click', function (e) { onListClick(e, this, false); });
-
-      MC.bus.on('auth:changed', function () { loadMarks(); loadHistory(); });
+      MC.util.qs('#markList').addEventListener('click', function (e) { onListClick(e, true); });
+      MC.util.qs('#historyList').addEventListener('click', function (e) { onListClick(e, false); });
 
       // 查询成功后写一条历史；写失败只提示，不打断查询
       MC.bus.on('server:queried', function (res) {
@@ -195,13 +199,17 @@ globalThis.MC = globalThis.MC || {};
           max: res.players ? res.players.max : null,
           motd: res.motd || '',
           account: (MC.util.qs('#accountName').value || '').trim()
-        }).then(function (row) {
-          if (row) loadHistory();
-        }).catch(function (err) { MC.toast(err.message, 'error'); });
+        }).then(function () {
+          return loadHistory();
+        }).catch(function (err) { MC.toast(err.message || '写入历史失败', 'error'); });
       });
 
       renderMarks();
       renderHistory();
+      renderStoreHint();
+      // 进入页面即把本机已存的收藏与历史读出来
+      loadMarks();
+      loadHistory();
     },
     refresh: function () { loadMarks(); loadHistory(); }
   };
