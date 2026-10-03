@@ -43,9 +43,34 @@ globalThis.MC = globalThis.MC || {};
     }, 20);
   }
 
+  /** 图例折叠偏好存本机：图例会挡住地图，用户收起后下次进来应保持收起 */
+  var LEGEND_COLLAPSED_KEY = 'mc-atlas.legend-collapsed';
+
+  function legendCollapsed() {
+    try { return window.localStorage.getItem(LEGEND_COLLAPSED_KEY) === '1'; } catch (e) { return false; }
+  }
+
+  function applyLegendCollapsed(collapsed) {
+    var box = MC.util.qs('#legend');
+    if (!box) return;
+    box.classList.toggle('is-collapsed', collapsed);
+    var btn = MC.util.qs('#legendToggle');
+    if (!btn) return;
+    btn.textContent = collapsed ? '展开' : '收起';
+    btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+  }
+
+  function setLegendCollapsed(collapsed) {
+    // 隐私模式下 localStorage 会抛错，此时仅本次会话生效，不影响使用
+    try { window.localStorage.setItem(LEGEND_COLLAPSED_KEY, collapsed ? '1' : '0'); } catch (e) { /* 忽略 */ }
+    applyLegendCollapsed(collapsed);
+  }
+
   function updateLegend() {
     var defs = engine.availableStructures().filter(function (s) { return s.dim === state.dim; });
     var box = MC.util.qs('#legend');
+    if (!box) return;
+    box.classList.remove('is-collapsed');
     // 近似引擎算不出建筑位置，必须讲清楚，否则用户会以为这片世界没有建筑
     if (!engine.usesWasm()) {
       box.innerHTML = '<div class="legend-title">建筑位置不可用</div>' +
@@ -55,12 +80,18 @@ globalThis.MC = globalThis.MC || {};
       return;
     }
     if (!defs.length) { box.innerHTML = '<div class="legend-title">当前维度无可显示建筑</div>'; return; }
-    var html = '<div class="legend-title">建筑图例</div><div class="legend-items">';
+    var items = '';
     defs.forEach(function (d) {
-      html += '<span class="legend-item"><span class="swatch" style="background:' + d.color + '"></span>' + d.zh + '</span>';
+      items += '<span class="legend-item"><span class="swatch" style="background:' + d.color + '"></span>' + d.zh + '</span>';
     });
-    html += '</div>';
-    box.innerHTML = html;
+    // 标题栏常驻，右侧按钮负责收起/展开长列表（列表太大时会盖住整张地图）
+    box.innerHTML =
+      '<div class="legend-head">' +
+        '<span class="legend-title">建筑图例</span>' +
+        '<button type="button" class="legend-toggle" id="legendToggle" aria-expanded="true">收起</button>' +
+      '</div>' +
+      '<div class="legend-items">' + items + '</div>';
+    applyLegendCollapsed(legendCollapsed());
   }
 
   function setBadge() {
@@ -217,7 +248,13 @@ globalThis.MC = globalThis.MC || {};
     }
   }
 
+  // boot 只允许执行一次：DOMContentLoaded 若被重复触发，重复绑定监听会让按钮点一次生效两次
+  var booted = false;
+
   function boot() {
+    if (booted) return;
+    booted = true;
+
     // 先展示欢迎页（MC 风格 + 进入动画），触屏设备点“进入”后开始使用
     showIntro();
 
@@ -273,6 +310,21 @@ globalThis.MC = globalThis.MC || {};
     MC.util.qsa('#tabs .tab').forEach(function (b) {
       b.addEventListener('click', function () { switchView(b.dataset.view); });
     });
+
+    // 图例的 DOM 每次更新世界都会重建，故用事件委托挂在容器上（点标题栏任意处即可收起/展开）
+    var legendBox = MC.util.qs('#legend');
+    if (legendBox) {
+      legendBox.addEventListener('click', function (e) {
+        var el = e.target;
+        while (el && el !== legendBox) {
+          if (el.classList && el.classList.contains('legend-head')) {
+            setLegendCollapsed(!legendCollapsed());
+            return;
+          }
+          el = el.parentNode;
+        }
+      });
+    }
 
     engine.init(wasmUrl)
       .then(function () { return tiles.init(wasmUrl); })

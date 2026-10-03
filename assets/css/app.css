@@ -68,6 +68,12 @@ body {
   background: linear-gradient(145deg, #8fd44a, #c9913f);
   box-shadow: 0 2px 8px rgba(106, 190, 48, 0.35);
 }
+/* 站点 LOGO（顶栏品牌图标）：方形图片自带米白底，覆盖基础渐变色 */
+.brand-logo {
+  object-fit: cover;
+  background: #f6f6f4;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.42);
+}
 .brand-text { font-size: 15px; }
 
 .tabs {
@@ -430,15 +436,34 @@ button.small { padding: 5px 10px; font-size: 12px; }
   -webkit-backdrop-filter: blur(12px);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-2);
-  padding: 11px 13px;
-  max-width: 270px;
+  padding: 9px 11px;
+  max-width: 260px;
   font-size: 11px;
   color: var(--text-2);
 }
-.legend-title { font-weight: 650; margin-bottom: 7px; color: var(--text); }
-.legend-items { display: flex; flex-wrap: wrap; gap: 6px 12px; }
+.legend-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.legend-title { font-weight: 650; color: var(--text); }
+/* 折叠按钮：小而轻，不抢地图视野（覆盖移动端 button 的 40px 最小触摸高度） */
+.legend-toggle {
+  flex: none;
+  min-height: 22px;
+  padding: 2px 8px;
+  font-size: 10.5px;
+  line-height: 1.4;
+  border-radius: 6px;
+}
+.legend-items { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 7px; }
 .legend-item { display: flex; align-items: center; gap: 5px; }
 .legend-item .swatch { width: 10px; height: 10px; border-radius: 3px; }
+
+/* 收起态：只剩标题栏一行，尽量少遮挡地图 */
+.legend.is-collapsed { padding: 7px 10px; }
+.legend.is-collapsed .legend-items { display: none; }
 
 /* 服务器查询结果 */
 .server-head { display: flex; align-items: center; gap: 11px; }
