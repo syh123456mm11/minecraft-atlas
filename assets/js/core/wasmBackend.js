@@ -185,7 +185,10 @@ globalThis.MC = globalThis.MC || {};
     if (!this._outPtr) this._outPtr = this.m._malloc(16);
     var p = this._outPtr;
     if (this.m._wasm_structure_pos(idx, this._mc, this._lo, this._hi, rx, rz, p) !== 1) return null;
-    return { x: this.m.HEAP32[p / 4], z: this.m.HEAP32[p / 4 + 1] };
+    // cubiomes 返回的是【区块坐标】，地图投影与搜索距离都用【方块坐标】，
+    // 这里统一换算到方块（区块中心）避免标记整体差 16 倍、贴到原点附近
+    var chunkX = this.m.HEAP32[p / 4], chunkZ = this.m.HEAP32[p / 4 + 1];
+    return { x: chunkX * 16 + 8, z: chunkZ * 16 + 8 };
   };
 
   WasmBackend.prototype.structureViable = function (key, bx, bz) {
@@ -195,7 +198,8 @@ globalThis.MC = globalThis.MC || {};
     if (idx < 0) return false;
     var h = this._ctx(def.dim);
     if (!h) return false;
-    return this.m._wasm_ctx_structure_viable(h, idx, bx, bz) === 1;
+    // 入参是方块坐标（与 structureAttempt / 地图保持一致），cubiomes 的 viable 检查要区块坐标
+    return this.m._wasm_ctx_structure_viable(h, idx, Math.floor(bx / 16), Math.floor(bz / 16)) === 1;
   };
 
   WasmBackend.prototype.dispose = function () {
