@@ -132,7 +132,7 @@ globalThis.MC = globalThis.MC || {};
       applyServerWorld();
       return;
     }
-    var wasmUrl = new URL('assets/vendor/seedmaps-engine-wasm/seed_engine.js', location.href).href;
+    var wasmUrl = MC.util.asset('assets/vendor/seedmaps-engine-wasm/seed_engine.js');
     serverEngine.init(wasmUrl).then(function () {
       if (!serverWorld) serverWorld = { host: 'mc.example.com', version: '' };
       applyServerWorld();
@@ -183,7 +183,7 @@ globalThis.MC = globalThis.MC || {};
   }
 
   function boot() {
-    var wasmUrl = new URL('assets/vendor/seedmaps-engine-wasm/seed_engine.js', location.href).href;
+    var wasmUrl = MC.util.asset('assets/vendor/seedmaps-engine-wasm/seed_engine.js');
     tiles = new MC.TileSource(engine);
 
     map = new MC.MapView(MC.util.qs('#map'), engine, tiles, {});

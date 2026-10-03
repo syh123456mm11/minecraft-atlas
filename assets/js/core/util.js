@@ -22,7 +22,28 @@ globalThis.MC = globalThis.MC || {};
     }
   };
 
+  /*
+   * 站点根地址。从本脚本自身的 URL 反推（util.js 位于 <根>/assets/js/core/），
+   * 不能用 location.href —— 页面地址是 <根>/index.html，基准目录会差一级，
+   * 一旦站点部署到子路径（GitHub Pages 的 /仓库名/）就会解析到根域上去。
+   */
+  var ROOT = (function () {
+    var script = (typeof document !== 'undefined') ? document.currentScript : null;
+    try {
+      return script && script.src
+        ? new URL('../../../', script.src).href
+        : new URL('./', location.href).href;
+    } catch (e) {
+      return './';
+    }
+  })();
+
   MC.util = {
+    /** 把「相对站点根」的路径解析成绝对 URL，供 Worker / WASM 等需要绝对地址的地方使用 */
+    asset: function (rel) {
+      return new URL(String(rel).replace(/^\.?\//, ''), ROOT).href;
+    },
+
     qs: function (sel, root) { return (root || document).querySelector(sel); },
     qsa: function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); },
 

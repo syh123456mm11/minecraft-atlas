@@ -18,7 +18,7 @@ globalThis.MC = globalThis.MC || {};
     var self = this;
     if (location.protocol === 'file:' || typeof Worker === 'undefined') return Promise.resolve(this);
     var count = Math.min(4, Math.max(1, (navigator.hardwareConcurrency || 4) - 1));
-    var url = new URL('../map/tileWorker.js', location.href).href;
+    var url = MC.util.asset('assets/js/map/tileWorker.js');
     var jobs = [];
     for (var i = 0; i < count; i++) {
       jobs.push(this._spawn(url, wasmUrl));
