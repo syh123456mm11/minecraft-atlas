@@ -95,13 +95,17 @@ globalThis.MC = globalThis.MC || {};
     return this.backend.regionSize(key) || 0;
   };
 
+  /*
+   * 结构查询先确认后端真的支持。近似引擎没有这两个方法，
+   * 门面在这里挡住，调用方就不必各自记得先判区域大小——漏一处就是崩溃。
+   */
   Engine.prototype.structureAttempt = function (key, rx, rz) {
-    if (!this.backend) return null;
+    if (!this.backend || typeof this.backend.structureAttempt !== 'function') return null;
     return this.backend.structureAttempt(key, rx, rz);
   };
 
   Engine.prototype.structureViable = function (key, bx, bz) {
-    if (!this.backend) return false;
+    if (!this.backend || typeof this.backend.structureViable !== 'function') return false;
     return this.backend.structureViable(key, bx, bz);
   };
 

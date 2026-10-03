@@ -2,6 +2,9 @@
  * 纯 JS 近似生成后端（WASM 不可用时的兜底）。
  * 用多层值噪声拟合 1.18+ 的气候参数（大陆性/侵蚀/温度/湿度/奇异值）再归类群系，
  * 结果与官方算法不逐格一致，但地形分布形态与真实世界接近，足够用于找地形与规划路线。
+ *
+ * 边界：只近似「群系」，不碰「结构」。建筑落点需要官方放置算法，
+ * 这里算不出来，一律如实返回不可用（见 regionSize）。
  */
 globalThis.MC = globalThis.MC || {};
 (function (MC) {
@@ -40,26 +43,6 @@ globalThis.MC = globalThis.MC || {};
     }
     return sum / norm;
   }
-
-  // 结构与群系的粗略校验表（近似模式用）
-  var VALID = {
-    village: ['plains', 'sunflower_plains', 'savanna', 'savanna_plateau', 'desert', 'taiga', 'snowy_plains', 'snowy_taiga', 'meadow', 'cherry_grove'],
-    desert_pyramid: ['desert', 'desert_lakes'],
-    jungle_pyramid: ['jungle', 'bamboo_jungle', 'sparse_jungle'],
-    swamp_hut: ['swamp', 'mangrove_swamp'],
-    igloo: ['snowy_plains', 'snowy_taiga', 'ice_spikes', 'grove', 'snowy_slopes'],
-    pillager_outpost: ['plains', 'savanna', 'desert', 'taiga', 'snowy_plains', 'meadow', 'grove', 'cherry_grove'],
-    mansion: ['dark_forest'],
-    monument: ['deep_ocean', 'deep_cold_ocean', 'deep_frozen_ocean', 'deep_lukewarm_ocean', 'deep_warm_ocean'],
-    ocean_ruin: ['ocean', 'cold_ocean', 'warm_ocean', 'lukewarm_ocean', 'frozen_ocean', 'deep_ocean'],
-    shipwreck: ['ocean', 'beach', 'snowy_beach', 'cold_ocean', 'warm_ocean'],
-    ancient_city: ['deep_dark'],
-    desert_well: ['desert', 'desert_lakes'],
-    buried_treasure: ['beach', 'snowy_beach', 'ocean', 'deep_ocean'],
-    fortress: ['nether_wastes', 'soul_sand_valley', 'crimson_forest', 'warped_forest', 'basalt_deltas'],
-    bastion_remnant: ['nether_wastes', 'soul_sand_valley', 'crimson_forest', 'warped_forest', 'basalt_deltas'],
-    end_city: ['end_midlands', 'end_highlands', 'end_barrens']
-  };
 
   function JsBackend() {
     this.label = 'JS 近似引擎';
@@ -211,30 +194,14 @@ globalThis.MC = globalThis.MC || {};
     return rnd === 0;
   };
 
-  JsBackend.prototype.structureIndex = function () { return -1; };
-
-  JsBackend.prototype.regionSize = function (key) {
-    var def = MC.structureByKey(key);
-    return def && def.fallback ? def.fallback.spacing : 0;
-  };
-
-  JsBackend.prototype.structureAttempt = function (key, rx, rz) {
-    var def = MC.structureByKey(key);
-    if (!def || !def.fallback) return null;
-    var f = def.fallback;
-    var hv = mix32(rx * 341873128712 ^ rz * 132897987541 ^ this.seed ^ Math.imul(f.salt | 0, 2654435761));
-    var ox = f.separation > 0 ? hv % f.separation : 0;
-    var oz = f.separation > 0 ? (hv >>> 10) % f.separation : 0;
-    if (f.separation === 0 && (hv % 24) !== 0) return null; // 稀疏结构：近似降频
-    return { x: (rx * f.spacing + ox) * 16 + 8, z: (rz * f.spacing + oz) * 16 + 8 };
-  };
-
-  JsBackend.prototype.structureViable = function (key, bx, bz) {
-    var list = VALID[key];
-    if (!list) return true;
-    var name = this.biomeName(this.biomeAt(bx, bz));
-    return list.indexOf(name) >= 0;
-  };
+  /*
+   * 结构位置一律不提供，区域大小返回 0 让上层直接跳过。
+   * 原因：建筑落点由官方放置算法（区域哈希 + 群系可行性判定）决定，
+   * 近似后端只有自己拟合的噪声群系，拿它去猜坐标等于凭空编造——
+   * 之前用哈希伪造坐标，实测与真实位置 169 个区域 0 个吻合，且会生成在海洋里。
+   * 宁可不画，也不能把假的标记当成真的给用户。
+   */
+  JsBackend.prototype.regionSize = function () { return 0; };
 
   JsBackend.prototype.dispose = function () { /* 无资源需要释放 */ };
 

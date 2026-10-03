@@ -92,32 +92,32 @@ globalThis.MC = globalThis.MC || {};
   /**
    * 建筑定义。
    * engine: cubiomes 中对应的结构名（运行时按名取枚举下标，取不到则该版本不支持）
-   * fallback: 兜底引擎使用的放置参数（区域格数 / 最小间隔 / 随机盐）
+   * 位置一律由 cubiomes 计算；近似引擎不提供结构，见 jsBackend.regionSize。
    */
   MC.STRUCTURES = [
-    { key: 'village', zh: '村庄', mark: '村', color: '#b07a35', dim: 0, engine: 'village', fallback: { spacing: 34, separation: 8, salt: 10387312 } },
-    { key: 'desert_pyramid', zh: '沙漠神殿', mark: '殿', color: '#d9a441', dim: 0, engine: 'desert_pyramid', fallback: { spacing: 32, separation: 8, salt: 14357617 } },
-    { key: 'jungle_pyramid', zh: '丛林神庙', mark: '庙', color: '#7fae52', dim: 0, engine: 'jungle_pyramid', fallback: { spacing: 32, separation: 8, salt: 14357617 } },
-    { key: 'swamp_hut', zh: '沼泽小屋', mark: '屋', color: '#4f7a5f', dim: 0, engine: 'swamp_hut', fallback: { spacing: 32, separation: 8, salt: 14357620 } },
-    { key: 'igloo', zh: '冰屋', mark: '冰', color: '#9fd4e8', dim: 0, engine: 'igloo', fallback: { spacing: 32, separation: 8, salt: 14357618 } },
-    { key: 'pillager_outpost', zh: '掠夺者前哨站', mark: '哨', color: '#6b6b7a', dim: 0, engine: 'pillager_outpost', fallback: { spacing: 32, separation: 8, salt: 165745296 } },
-    { key: 'mansion', zh: '林地府邸', mark: '邸', color: '#4a3b2a', dim: 0, engine: 'mansion', fallback: { spacing: 80, separation: 20, salt: 10387319 } },
-    { key: 'monument', zh: '海底神殿', mark: '碑', color: '#3f8fa8', dim: 0, engine: 'monument', fallback: { spacing: 32, separation: 5, salt: 10387313 } },
-    { key: 'ocean_ruin', zh: '海底废墟', mark: '墟', color: '#5f8f9f', dim: 0, engine: 'ocean_ruin', fallback: { spacing: 20, separation: 8, salt: 14357621 } },
-    { key: 'shipwreck', zh: '沉船', mark: '船', color: '#8a6a4a', dim: 0, engine: 'shipwreck', fallback: { spacing: 24, separation: 4, salt: 165745295 } },
-    { key: 'ruined_portal', zh: '废弃传送门', mark: '门', color: '#7a5fbf', dim: 0, engine: 'ruined_portal', fallback: { spacing: 40, separation: 15, salt: 34222645 } },
-    { key: 'mineshaft', zh: '废弃矿井', mark: '矿', color: '#8a7a5a', dim: 0, engine: 'mineshaft', fallback: { spacing: 1, separation: 0, salt: 0 } },
-    { key: 'desert_well', zh: '沙漠水井', mark: '井', color: '#c9b47a', dim: 0, engine: 'desert_well', fallback: { spacing: 1, separation: 0, salt: 0 } },
-    { key: 'buried_treasure', zh: '埋藏的宝藏', mark: '宝', color: '#d4b106', dim: 0, engine: 'buried_treasure', fallback: { spacing: 1, separation: 0, salt: 0 } },
-    { key: 'amethyst_geode', zh: '紫水晶洞', mark: '晶', color: '#a06fd0', dim: 0, engine: 'amethyst_geode', fallback: { spacing: 1, separation: 0, salt: 0 } },
-    { key: 'ancient_city', zh: '远古城市', mark: '城', color: '#2f4f6b', dim: 0, engine: 'ancient_city', fallback: { spacing: 24, separation: 8, salt: 20063726 } },
-    { key: 'trail_ruins', zh: '古迹废墟', mark: '迹', color: '#9a8f6b', dim: 0, engine: 'trail_ruins', fallback: { spacing: 34, separation: 8, salt: 14357621 } },
-    { key: 'trial_chambers', zh: '试炼密室', mark: '炼', color: '#8f6b4a', dim: 0, engine: 'trial_chambers', fallback: { spacing: 34, separation: 12, salt: 42935719 } },
-    { key: 'fortress', zh: '下界要塞', mark: '堡', color: '#8a3b3b', dim: -1, engine: 'fortress', fallback: { spacing: 27, separation: 4, salt: 8787 } },
-    { key: 'bastion_remnant', zh: '堡垒遗迹', mark: '垒', color: '#5f4a3a', dim: -1, engine: 'bastion_remnant', fallback: { spacing: 27, separation: 4, salt: 30084232 } },
-    { key: 'ruined_portal_nether', zh: '废弃传送门（下界）', mark: '门', color: '#7a5fbf', dim: -1, engine: 'ruined_portal_nether', fallback: { spacing: 40, separation: 15, salt: 34222645 } },
-    { key: 'end_city', zh: '末地城', mark: '末', color: '#c0b090', dim: 1, engine: 'end_city', fallback: { spacing: 20, separation: 11, salt: 10387313 } },
-    { key: 'end_gateway', zh: '末地折跃门', mark: '跃', color: '#e0d0a0', dim: 1, engine: 'end_gateway', fallback: { spacing: 1, separation: 0, salt: 0 } }
+    { key: 'village', zh: '村庄', mark: '村', color: '#b07a35', dim: 0, engine: 'village' },
+    { key: 'desert_pyramid', zh: '沙漠神殿', mark: '殿', color: '#d9a441', dim: 0, engine: 'desert_pyramid' },
+    { key: 'jungle_pyramid', zh: '丛林神庙', mark: '庙', color: '#7fae52', dim: 0, engine: 'jungle_pyramid' },
+    { key: 'swamp_hut', zh: '沼泽小屋', mark: '屋', color: '#4f7a5f', dim: 0, engine: 'swamp_hut' },
+    { key: 'igloo', zh: '冰屋', mark: '冰', color: '#9fd4e8', dim: 0, engine: 'igloo' },
+    { key: 'pillager_outpost', zh: '掠夺者前哨站', mark: '哨', color: '#6b6b7a', dim: 0, engine: 'pillager_outpost' },
+    { key: 'mansion', zh: '林地府邸', mark: '邸', color: '#4a3b2a', dim: 0, engine: 'mansion' },
+    { key: 'monument', zh: '海底神殿', mark: '碑', color: '#3f8fa8', dim: 0, engine: 'monument' },
+    { key: 'ocean_ruin', zh: '海底废墟', mark: '墟', color: '#5f8f9f', dim: 0, engine: 'ocean_ruin' },
+    { key: 'shipwreck', zh: '沉船', mark: '船', color: '#8a6a4a', dim: 0, engine: 'shipwreck' },
+    { key: 'ruined_portal', zh: '废弃传送门', mark: '门', color: '#7a5fbf', dim: 0, engine: 'ruined_portal' },
+    { key: 'mineshaft', zh: '废弃矿井', mark: '矿', color: '#8a7a5a', dim: 0, engine: 'mineshaft' },
+    { key: 'desert_well', zh: '沙漠水井', mark: '井', color: '#c9b47a', dim: 0, engine: 'desert_well' },
+    { key: 'buried_treasure', zh: '埋藏的宝藏', mark: '宝', color: '#d4b106', dim: 0, engine: 'buried_treasure' },
+    { key: 'amethyst_geode', zh: '紫水晶洞', mark: '晶', color: '#a06fd0', dim: 0, engine: 'amethyst_geode' },
+    { key: 'ancient_city', zh: '远古城市', mark: '城', color: '#2f4f6b', dim: 0, engine: 'ancient_city' },
+    { key: 'trail_ruins', zh: '古迹废墟', mark: '迹', color: '#9a8f6b', dim: 0, engine: 'trail_ruins' },
+    { key: 'trial_chambers', zh: '试炼密室', mark: '炼', color: '#8f6b4a', dim: 0, engine: 'trial_chambers' },
+    { key: 'fortress', zh: '下界要塞', mark: '堡', color: '#8a3b3b', dim: -1, engine: 'fortress' },
+    { key: 'bastion_remnant', zh: '堡垒遗迹', mark: '垒', color: '#5f4a3a', dim: -1, engine: 'bastion_remnant' },
+    { key: 'ruined_portal_nether', zh: '废弃传送门（下界）', mark: '门', color: '#7a5fbf', dim: -1, engine: 'ruined_portal_nether' },
+    { key: 'end_city', zh: '末地城', mark: '末', color: '#c0b090', dim: 1, engine: 'end_city' },
+    { key: 'end_gateway', zh: '末地折跃门', mark: '跃', color: '#e0d0a0', dim: 1, engine: 'end_gateway' }
   ];
 
   MC.structureByKey = function (key) {

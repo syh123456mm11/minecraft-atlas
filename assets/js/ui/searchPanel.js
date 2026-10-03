@@ -28,7 +28,12 @@ globalThis.MC = globalThis.MC || {};
       return zh.indexOf(q) >= 0 || en.indexOf(q) >= 0;
     });
     if (!list.length) {
-      box.innerHTML = '<div class="result-empty">没有匹配项，换个关键词试试。</div>';
+      // 近似引擎不提供结构，列表会整个空掉——得说清原因，否则像是搜索坏了
+      var noEngine = kind === 'structure' && !ctx.engine.usesWasm();
+      box.innerHTML = noEngine
+        ? '<div class="result-empty">未加载 cubiomes 精确引擎，无法计算建筑位置。<br>' +
+          MC.util.escape(ctx.engine.fallbackReason || '') + '</div>'
+        : '<div class="result-empty">没有匹配项，换个关键词试试。</div>';
       return;
     }
     list.slice(0, 60).forEach(function (it) {

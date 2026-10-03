@@ -46,6 +46,14 @@ globalThis.MC = globalThis.MC || {};
   function updateLegend() {
     var defs = engine.availableStructures().filter(function (s) { return s.dim === state.dim; });
     var box = MC.util.qs('#legend');
+    // 近似引擎算不出建筑位置，必须讲清楚，否则用户会以为这片世界没有建筑
+    if (!engine.usesWasm()) {
+      box.innerHTML = '<div class="legend-title">建筑位置不可用</div>' +
+        '<div class="legend-items"><span class="legend-item">' +
+        MC.util.escape(engine.fallbackReason || '未加载 cubiomes 精确引擎') +
+        '。用本地 HTTP 服务打开可恢复。</span></div>';
+      return;
+    }
     if (!defs.length) { box.innerHTML = '<div class="legend-title">当前维度无可显示建筑</div>'; return; }
     var html = '<div class="legend-title">建筑图例</div><div class="legend-items">';
     defs.forEach(function (d) {
