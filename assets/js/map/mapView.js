@@ -8,6 +8,7 @@ globalThis.MC = globalThis.MC || {};
 
   var MAX_REGIONS = 12000;  // 单个结构类型的扫描上限，超出则该类型本帧不画
   var MAX_SLIME = 3000;     // 史莱姆区块绘制上限
+  var STRUCT_REFRESH_MS = 120; // 拖动中建筑列表的最小重算间隔，防止逐帧全量扫描掉帧
 
   function MapView(canvas, engine, tileSource, options) {
     this.canvas = canvas;
@@ -64,6 +65,9 @@ globalThis.MC = globalThis.MC || {};
   MapView.prototype.setWorld = function (world) {
     this.world = { mc: world.mc, dim: world.dim, seedLo: world.seedLo, seedHi: world.seedHi };
     this.bitmap = null;
+    // 位图与建筑都属于「上一个世界」。渲染是异步的，若不清空 structures，
+    // 新地形算完之前 draw() 会把旧世界的遗迹叠在新地形上（看起来就是标记乱飘）。
+    this.structures = [];
     this.requestRender(true);
   };
 
@@ -257,8 +261,19 @@ globalThis.MC = globalThis.MC || {};
     ctx.restore();
   };
 
+  /**
+   * 视口指纹：中心与缩放决定「哪些区域落在视野内」。
+   * 只在这些值变化时才需要重算建筑列表（拖动/缩放/切换世界）。
+   */
+  MapView.prototype._viewportKey = function () {
+    return this.centerX + '|' + this.centerZ + '|' + this.bpp + '|' +
+      (this.world ? this.world.mc + ':' + this.world.dim + ':' + this.world.seedLo + ':' + this.world.seedHi : '');
+  };
+
   /** 扫描视口内所有建筑的生成尝试点，并按可生成性区分显示 */
   MapView.prototype.refreshStructures = function () {
+    this._structuresKey = this._viewportKey();
+    this._lastStructAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
     var list = [];
     if (!this.world || !this.engine) { this.structures = list; return list; }
     var worldW = this.cssW * this.bpp, worldH = this.cssH * this.bpp;
@@ -297,7 +312,12 @@ globalThis.MC = globalThis.MC || {};
   };
 
   MapView.prototype._drawStructures = function (ctx) {
-    if (!this.structures || !this.structures.length) {
+    // 结构必须跟随当前视口：拖动/缩放后只 draw() 会用到旧视口的列表，
+    // 导致边缘新进入视野的建筑不出现（忽隐忽现）。按视口键判断是否需要重算，
+    // 但全量扫描约几十毫秒，拖动中逐帧重算会掉帧 —— 因此加时间节流：
+    // 拖动中最多每 STRUCT_REFRESH_MS 重算一次，松手后由 requestRender 立即补齐。
+    if (this._structuresKey !== this._viewportKey() &&
+      (!this._lastStructAt || performance.now() - this._lastStructAt >= STRUCT_REFRESH_MS)) {
       this.refreshStructures();
     }
     var self = this;
@@ -493,7 +513,12 @@ globalThis.MC = globalThis.MC || {};
       if (pointers.size < 2) pinchStart = null;
       if (dragging) {
         dragging = false;
-        if (moved) self.requestRender(false);
+        if (moved) {
+          // 立即按最终视口补齐建筑，别等 debounce —— 否则松手后标记会滞后/忽隐忽现
+          self.refreshStructures();
+          self.draw();
+          self.requestRender(false);
+        }
       }
     }
     this.canvas.addEventListener('pointerup', endPointer);

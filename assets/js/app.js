@@ -190,7 +190,37 @@ globalThis.MC = globalThis.MC || {};
     if (hud && hud.textContent.indexOf('鼠标') >= 0) hud.textContent = '拖动地图 · 双指缩放';
   }
 
+  function showIntro() {
+    var intro = MC.util.qs('#intro');
+    if (!intro) return;
+    intro.hidden = false;
+    void intro.offsetWidth; // 强制 reflow，确保开场动画从头播放
+    intro.classList.add('is-in');
+
+    var enter = MC.util.qs('#introEnter');
+    var touchNote = MC.util.qs('#introTouchWarn');
+    if (!MC.util.isTouchDevice()) {
+      // 非触屏：禁用进入并高亮注意事项（网站介绍仍可被浏览）
+      if (enter) {
+        enter.disabled = true;
+        enter.textContent = '非触屏暂不可用 w(ﾟДﾟ)w';
+        enter.classList.add('is-blocked');
+      }
+      if (touchNote) touchNote.classList.add('is-active');
+    }
+    if (enter) {
+      enter.addEventListener('click', function () {
+        if (!MC.util.isTouchDevice()) return; // 双保险：非触屏不可进入
+        intro.classList.add('is-out');
+        setTimeout(function () { intro.hidden = true; intro.classList.remove('is-out', 'is-in'); }, 420);
+      });
+    }
+  }
+
   function boot() {
+    // 先展示欢迎页（MC 风格 + 进入动画），触屏设备点“进入”后开始使用
+    showIntro();
+
     var wasmUrl = MC.util.asset('assets/vendor/seedmaps-engine-wasm/seed_engine.js');
     tiles = new MC.TileSource(engine);
 

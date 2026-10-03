@@ -100,6 +100,23 @@ globalThis.MC = globalThis.MC || {};
       return Promise.reject(new Error('clipboard unavailable'));
     },
 
+    /**
+     * 是否为可触屏设备。采用两类可靠信号（不使用 'ontouchstart' in window ——
+     * 桌面浏览器即便没有触摸也定义了该事件属性，会误判为触屏）：
+     *  - navigator.maxTouchPoints：硬件真实的触摸点数量，鼠标设备为 0
+     *  - matchMedia('(pointer: coarse)')：主指针是粗指针（手指）而非鼠标（fine）
+     */
+    isTouchDevice: function () {
+      if (typeof window === 'undefined' || !window) return false;
+      var nav = (typeof navigator !== 'undefined') ? navigator : {};
+      var hasTouchPoint = (typeof nav.maxTouchPoints === 'number' && nav.maxTouchPoints > 0);
+      var coarsePointer = false;
+      try {
+        coarsePointer = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+      } catch (e) { /* 环境不支持 media query，忽略 */ }
+      return hasTouchPoint || coarsePointer;
+    },
+
     /** 极简 HTML 转义，所有外部数据来源（服务器 MOTD 等）渲染前必须经过 */
     escape: function (s) {
       return String(s === null || s === undefined ? '' : s)
